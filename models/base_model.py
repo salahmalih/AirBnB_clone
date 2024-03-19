@@ -24,6 +24,8 @@ class BaseModel:
                     self.__dict__[k] = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
                 else:
                     self.__dict__[k] = v
+        else:
+            models.storage.new(self)
 
     def __str__(self):
         """Return the str representation of the BaseModel instance."""
@@ -32,6 +34,7 @@ class BaseModel:
     def save(self):
         """Update updated_at with the current datetime."""
         self.updated_at = datetime.today()
+        models.storage.save()
 
     def to_dict(self):
         """Return the dictionary of the BaseModel instance.
