@@ -3,7 +3,14 @@
 import cmd
 import re
 from models import storage
+from shlex import split
 from models.base_model import BaseModel
+from models.user import User
+from models.state import State
+from models.city import City
+from models.place import Place
+from models.amenity import Amenity
+from models.review import Review
 
 def parse(arg):
     curly_braces = re.search(r"\{(.*?)\}", arg)
@@ -35,8 +42,15 @@ class HBNBCommand(cmd.Cmd):
 
     prompt = "(hbnb) "
     __classes = {
-        "BaseModel"
+        "BaseModel",
+        "User",
+        "State",
+        "City",
+        "Place",
+        "Amenity",
+        "Review"
     }
+
     def do_quit(self, arg):
         """Quit command to exit the program."""
         return True
@@ -58,6 +72,7 @@ class HBNBCommand(cmd.Cmd):
             print(eval(argls[0])().id)
             storage.save()
 
+    
     def do_show(self, arg):
         """Usage: show <class> <id> or <class>.show(<id>)
         Display the string representation of a class instance of a given id.
@@ -110,51 +125,63 @@ class HBNBCommand(cmd.Cmd):
 
     def do_update(self, arg):
         """Usage: update <class> <id> <attribute_name> <attribute_value> or
-       <class>.update(<id>, <attribute_name>, <attribute_value>) or
-       <class>.update(<id>, <dictionary>)
+        <class>.update(<id>, <attribute_name>, <attribute_value>) or
+        <class>.update(<id>, <dictionary>)
         Update a class instance of a given id by adding or updating
         a given attribute key/value pair or dictionary."""
+
         argls = parse(arg)
         objdict = storage.all()
 
-        if len(argls) == 0:
+        if not argls:
             print("** class name missing **")
             return False
-        if argls[0] not in HBNBCommand.__classes:
+
+        class_name = argls[0]
+
+        if class_name not in HBNBCommand.__classes:
             print("** class doesn't exist **")
             return False
-        if len(argls) == 1:
+
+        if len(argls) < 2:
             print("** instance id missing **")
             return False
-        if "{}.{}".format(argls[0], argls[1]) not in objdict.keys():
+
+        instance_id = argls[1]
+
+        if f"{class_name}.{instance_id}" not in objdict.keys():
             print("** no instance found **")
             return False
-        if len(argls) == 2:
+
+        if len(argls) < 3:
             print("** attribute name missing **")
             return False
-        if len(argls) == 3:
-            try:
-                type(eval(argl[2])) != dict
-            except NameError:
-                print("** value missing **")
-                return False
 
-        if len(argls) == 4:
-            obj = objdict["{}.{}".format(argls[0], argls[1])]
-            if argls[2] in obj.__class__.__dict__.keys():
-                valtype = type(obj.__class__.__dict__[argls[2]])
-                obj.__dict__[argls[2]] = valtype(argls[3])
-            else:
-                obj.__dict__[argls[2]] = argls[3]
-        elif type(eval(argls[2])) == dict:
-            obj = objdict["{}.{}".format(argls[0], argls[1])]
-            for k, v in eval(argls[2]).items():
-                if (k in obj.__class__.__dict__.keys() and
-                        type(obj.__class__.__dict__[k]) in {str, int, float}):
-                    valtype = type(obj.__class__.__dict__[k])
-                    obj.__dict__[k] = valtype(v)
+        attribute_name = argls[2]
+
+        if len(argls) < 4:
+            print("** value missing **")
+            return False
+
+        attribute_value = argls[3]
+
+        obj = objdict[f"{class_name}.{instance_id}"]
+        class_dict = obj.__class__.__dict__
+
+        if attribute_name in class_dict:
+            val_type = type(class_dict[attribute_name])
+            obj.__dict__[attribute_name] = val_type(attribute_value)
+        elif isinstance(eval(attribute_value), dict):
+            for key, value in eval(attribute_value).items():
+                if key in class_dict and type(class_dict[key]) in {str, int, float}:
+                    val_type = type(class_dict[key])
+                    obj.__dict__[key] = val_type(value)
                 else:
-                    obj.__dict__[k] = v
+                    obj.__dict__[key] = value
+        else:
+            obj.__dict__[attribute_name] = attribute_value
+
         storage.save()
+
 if __name__ == '__main__':
     HBNBCommand().cmdloop()
