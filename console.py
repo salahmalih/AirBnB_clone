@@ -143,7 +143,7 @@ class HBNBCommand(cmd.Cmd):
             print(str(instance))
 
     def emptyline(self):
-        """Do nothing  receiving an empty line."""
+        """Do nothing upon receiving an empty line."""
         pass
 
     def do_destroy(self, arg):
